@@ -12,82 +12,49 @@ const INSTAGRAM_USERNAME = "diecast_dripz";
 const CONTACT_EMAIL = "abhaydasah2022@gmail.com";
 const CONTACT_PHONE = "+91XXXXXXXXXX";
 
+
 /***********************************************
  * HELPER: Safe CSV parser (handles quotes, ,) *
  ***********************************************/
 function parseCSV(text) {
-  // Returns array of rows; each row is array of fields (strings)
   const rows = [];
   let i = 0, field = "", row = [];
   let inQuotes = false;
 
   while (i < text.length) {
-    const char = text[i];
+    const ch = text[i];
 
     if (inQuotes) {
-      if (char === '"') {
-        if (text[i + 1] === '"') { // escaped quote ""
-          field += '"';
-          i += 2;
-          continue;
-        } else {
-          inQuotes = false;
-          i++;
-          continue;
-        }
-      } else {
-        field += char;
-        i++;
-        continue;
-      }
+      if (ch === '"') {
+        if (text[i + 1] === '"') { field += '"'; i += 2; }
+        else { inQuotes = false; i++; }
+      } else { field += ch; i++; }
     } else {
-      if (char === '"') {
-        inQuotes = true;
-        i++;
-        continue;
-      }
-      if (char === ",") {
-        row.push(field.trim());
-        field = "";
-        i++;
-        continue;
-      }
-      if (char === "\r") { i++; continue; } // ignore CR
-      if (char === "\n") {
-        row.push(field.trim());
-        rows.push(row);
-        row = [];
-        field = "";
-        i++;
-        continue;
-      }
-      field += char;
-      i++;
+      if (ch === '"') { inQuotes = true; i++; }
+      else if (ch === ",") { row.push(field.trim()); field = ""; i++; }
+      else if (ch === "\r") { i++; }
+      else if (ch === "\n") { row.push(field.trim()); rows.push(row); row = []; field = ""; i++; }
+      else { field += ch; i++; }
     }
   }
-  // last field
-  if (field.length > 0 || row.length > 0) {
-    row.push(field.trim());
-    rows.push(row);
-  }
+  if (field.length > 0 || row.length > 0) { row.push(field.trim()); rows.push(row); }
   return rows;
 }
 
 /****************************************
- * Build Instagram links                *
+ * Device helpers                       *
  ****************************************/
-function buildInstagramWebDM(username, message) {
-  // Web deep link that opens DM composer (prefilled text on many devices)
-  return `https://ig.me/m/${encodeURIComponent(username)}?text=${encodeURIComponent(message)}`;
-}
-
-function buildInstagramAppProfile(username) {
-  // App deep link to open Instagram app on mobile, goes to profile
-  return `instagram://user?username=${encodeURIComponent(username)}`;
-}
-
-function isProbablyMobile() {
+function isMobile() {
   return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+/****************************************
+ * Instagram DM link strategy           *
+ ****************************************/
+// Best chance to open app DM to a specific account with prefilled text.
+// On mobile, ig.me usually deep-links straight into Instagram app.
+function buildIgMeDM(username, message) {
+  return `https://ig.me/m/${encodeURIComponent(username)}?text=${encodeURIComponent(message)}`;
 }
 
 /****************************************
@@ -129,27 +96,14 @@ function createCard(item) {
   if (!isOut) {
     button.addEventListener("click", () => {
       const message = `I'm interested in buying the ${name}`;
+      const dm = buildIgMeDM(INSTAGRAM_USERNAME, message);
 
-      // Prefer app on mobile; fallback to web DM with message prefilled
-      const appLink = buildInstagramAppProfile(INSTAGRAM_USERNAME);
-      const webLink = buildInstagramWebDM(INSTAGRAM_USERNAME, message);
-
-      if (isProbablyMobile()) {
-        // Try opening app first
-        const start = Date.now();
-        // Use location.assign to avoid popup blockers
-        window.location.assign(appLink);
-
-        // If app isn't installed / link fails, fallback to web after a short delay
-        setTimeout(() => {
-          const elapsed = Date.now() - start;
-          if (elapsed < 1200) {
-            window.open(webLink, "_blank", "noopener");
-          }
-        }, 800);
+      if (isMobile()) {
+        // On mobile: navigating the current tab has the best chance to open the Instagram app
+        window.location.href = dm;
       } else {
-        // Desktop: go straight to web DM in a new tab
-        window.open(webLink, "_blank", "noopener");
+        // Desktop: open web DM in a new tab
+        window.open(dm, "_blank", "noopener");
       }
     });
   }
@@ -158,49 +112,35 @@ function createCard(item) {
 }
 
 /****************************************
- * Render contact info in header/footer *
+ * Status helpers                       *
  ****************************************/
-function wireStaticBits() {
-  // Footer year
-  const y = document.getElementById("year");
-  if (y) y.textContent = new Date().getFullYear();
+function showOnly({ loading = false, error = false, empty = false }) {
+  const loadingEl = document.getElementById("loading");
+  const errorEl = document.getElementById("error");
+  const emptyEl = document.getElementById("empty");
 
-  // Header contact (ensure links match config)
-  const header = document.querySelector(".site-header .contact");
-  if (header) {
-    const links = header.querySelectorAll("a");
-    links.forEach((a) => {
-      if (a.href.includes("mailto:")) a.href = `mailto:${CONTACT_EMAIL}`;
-      if (a.href.includes("tel:")) a.href = `tel:${CONTACT_PHONE.replace(/\s+/g, "")}`;
-      if (a.href.includes("instagram.com")) a.href = `https://www.instagram.com/${INSTAGRAM_USERNAME}`;
-      if (a.textContent.includes("@")) a.textContent = `@${INSTAGRAM_USERNAME}`;
-      if (a.textContent.includes("youremail")) a.textContent = CONTACT_EMAIL;
-      if (a.textContent.includes("XXXXXXXXXX")) a.textContent = CONTACT_PHONE;
-    });
-  }
+  loadingEl.hidden = !loading;
+  errorEl.hidden = !error;
+  emptyEl.hidden = !empty;
 }
 
 /****************************************
  * Fetch, parse, and render catalog     *
  ****************************************/
 async function loadCatalog() {
-  const loadingEl = document.getElementById("loading");
-  const errorEl = document.getElementById("error");
   const grid = document.getElementById("catalog-container");
-
-  loadingEl.hidden = false;
-  errorEl.hidden = true;
   grid.innerHTML = "";
+  showOnly({ loading: true });
 
   try {
     const res = await fetch(SHEET_CSV_URL, { cache: "no-store" });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const csvText = await res.text();
 
-    const rows = parseCSV(csvText);
-    if (!rows.length) throw new Error("Empty CSV");
+    const rows = parseCSV(csvText).filter(r => r && r.length && r.join("").trim().length);
+    if (!rows.length) { showOnly({ empty: true }); return; }
 
-    // Expect header in first row
+    // Header row
     const header = rows[0].map(h => h.toLowerCase().trim());
     const col = (key) => header.indexOf(key);
 
@@ -210,27 +150,32 @@ async function loadCatalog() {
     const iImage = col("imageurl");
     const iStock = col("stock");
 
-    // Build cards from remaining rows
+    // If required columns are missing, treat as error
+    if (iName === -1 || iImage === -1) throw new Error("Required columns missing: Name, ImageURL");
+
+    let count = 0;
     for (let r = 1; r < rows.length; r++) {
       const row = rows[r];
-      if (!row || !row.length) continue;
-
+      // Guard against short rows
       const name        = (row[iName]  || "").trim();
       const price       = (row[iPrice] || "").trim();
       const description = (row[iDesc]  || "").trim();
       const imageURL    = (row[iImage] || "").trim();
       const stockRaw    = (row[iStock] || "").trim();
 
-      if (!name || !imageURL) continue; // minimal validation
+      if (!name || !imageURL) continue;
 
       const card = createCard({ name, price, description, imageURL, stockRaw });
       grid.appendChild(card);
+      count++;
     }
+
+    if (count === 0) { showOnly({ empty: true }); }
+    else { showOnly({}); } // Hide all status messages on success
+
   } catch (err) {
-    console.error(err);
-    errorEl.hidden = false;
-  } finally {
-    loadingEl.hidden = true;
+    console.error("Catalog load error:", err);
+    showOnly({ error: true });
   }
 }
 
@@ -238,6 +183,9 @@ async function loadCatalog() {
  * Init on DOM ready
  ********************/
 document.addEventListener("DOMContentLoaded", () => {
-  wireStaticBits();
+  // Footer year only — we do NOT touch header links to avoid duplicates.
+  const y = document.getElementById("year");
+  if (y) y.textContent = new Date().getFullYear();
+
   loadCatalog();
 });

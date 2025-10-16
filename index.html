@@ -15,25 +15,24 @@
         <p>Explore and collect your favorite die-cast cars!</p>
       </div>
 
-      <!-- Contact block (edit phone/email in script.js config or here) -->
-      <nav class="contact">
-        <a href="https://www.instagram.com/diecast_dripz" target="_blank" rel="noopener" aria-label="Instagram">
-          @diecast_dripz
-        </a>
-        <a href="mailto:abhaydasah2022@gmail.com" aria-label="Email">abhaydasah2022@gmail.com</a>
-
+      <!-- CONTACT: Edit these three only -->
+      <nav class="contact" aria-label="Contact">
+        <a class="contact__ig" href="https://www.instagram.com/diecast_dripz" target="_blank" rel="noopener">@diecasalso</a>
+        <a class="contact__mail" href="mailto:abhaydasah2022@gmail.com">abhaydasah2022@gmail.com</a>
+        <a class="contact__tel" href="tel:+91XXXXXXXXXX">+91-XXXXXXXXXX</a>
       </nav>
     </div>
   </header>
 
   <main>
-    <section class="status">
+    <section class="status" aria-live="polite">
       <div id="loading" role="status">Loading cars…</div>
       <div id="error" role="alert" hidden>Failed to load catalog. Please try again.</div>
+      <div id="empty" hidden>No cars available right now.</div>
     </section>
 
     <!-- JS will populate cards here -->
-    <section id="catalog-container" class="catalog-grid" aria-live="polite"></section>
+    <section id="catalog-container" class="catalog-grid"></section>
   </main>
 
   <footer class="site-footer">
