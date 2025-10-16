@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hot Wheels Catalog</title>
+  <meta name="description" content="Dynamic Hot Wheels catalog powered by a Google Sheet CSV." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <h1>🔥 Hot Wheels Catalog</h1>
+        <p>Explore and collect your favorite die-cast cars!</p>
+      </div>
+
+      <!-- Contact block (edit phone/email in script.js config or here) -->
+      <nav class="contact">
+        <a href="https://www.instagram.com/diecast_dripz" target="_blank" rel="noopener" aria-label="Instagram">
+          @diecast_dripz
+        </a>
+        <a href="mailto:abhaydasah2022@gmail.com" aria-label="Email">abhaydasah2022@gmail.com</a>
+
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="status">
+      <div id="loading" role="status">Loading cars…</div>
+      <div id="error" role="alert" hidden>Failed to load catalog. Please try again.</div>
+    </section>
+
+    <!-- JS will populate cards here -->
+    <section id="catalog-container" class="catalog-grid" aria-live="polite"></section>
+  </main>
+
+  <footer class="site-footer">
+    <p>© <span id="year"></span> Hot Wheels Catalog • Powered by Google Sheets • DM
+      <a href="https://www.instagram.com/diecast_dripz" target="_blank" rel="noopener">@diecast_dripz</a>
+    </p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
