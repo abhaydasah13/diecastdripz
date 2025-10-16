@@ -29,6 +29,8 @@ a:focus-visible, button:focus-visible {
   border-radius: 8px;
 }
 
+.hidden { display: none !important; }
+
 .site-header {
   background: linear-gradient(90deg, var(--brand), #ff7a1c);
   color: #fff;
